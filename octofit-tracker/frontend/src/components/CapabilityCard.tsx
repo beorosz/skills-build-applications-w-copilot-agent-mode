@@ -1,16 +1,14 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { getJson } from '../api/client.js';
 
 type Props<T> = {
   title: string;
   description: string;
-  path: string;
-  itemsKey: string;
+  loadItems: () => Promise<T[]>;
   emptyMessage: string;
   renderItem: (item: T) => ReactNode;
 };
 
-export function CapabilityCard<T>({ title, description, path, itemsKey, emptyMessage, renderItem }: Props<T>) {
+export function CapabilityCard<T>({ title, description, loadItems, emptyMessage, renderItem }: Props<T>) {
   const [items, setItems] = useState<T[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,11 +17,11 @@ export function CapabilityCard<T>({ title, description, path, itemsKey, emptyMes
     setItems(null);
     setError(null);
 
-    getJson<Record<string, T[]>>(path).then((response) => {
-      if (!Array.isArray(response[itemsKey])) {
+    loadItems().then((loadedItems) => {
+      if (!Array.isArray(loadedItems)) {
         throw new Error('Unexpected response format');
       }
-      if (active) setItems(response[itemsKey]);
+      if (active) setItems(loadedItems);
     }).catch((requestError: unknown) => {
       if (active) {
         setError(requestError instanceof Error ? requestError.message : 'Unknown error');
@@ -33,7 +31,7 @@ export function CapabilityCard<T>({ title, description, path, itemsKey, emptyMes
     return () => {
       active = false;
     };
-  }, [itemsKey, path]);
+  }, [loadItems]);
 
   return <section className="card h-100"><div className="card-body">
     <h2 className="h4">{title}</h2>
